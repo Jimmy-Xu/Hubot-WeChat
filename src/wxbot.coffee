@@ -90,6 +90,18 @@ class WxBot
       @_addMaintainerUserName member.UserName, member.NickName
     @groupMemberInfo[group.UserName] = memberList
 
+  getContactNickName: (userName) ->
+    return @contactInfo[userName]
+
+  getGroupNickName: (groupName) ->
+    return @groupInfo[groupName]
+
+  getGroupMemberNickName: (groupName, groupMemberName) ->
+    return @groupMemberInfo[groupName][groupMemberName]
+
+  isSelf: (userName) ->
+    return userName is @myUserName
+
   sendMessage: (fromUser, toGroup, toUser, messageContent, callback) ->
     try
       if toGroup
@@ -137,7 +149,8 @@ class WxBot
             @_handleMessage message for message in jsonBody.AddMsgList
           if jsonBody.ModContactCount != 0
             log.debug "new mod contact count: #{jsonBody.ModContactList.length}"
-            log.debug "new mod contact: %j", jsonBody.ModContactList
+            for contact in jsonBody.ModContactList
+              log.debug "#{contact.NickName}"
             @_handleModContactList contact for contact in jsonBody.ModContactList
         else
           @_logResponseError(response)
@@ -210,8 +223,8 @@ class WxBot
       else
         fromUserName = "anonymous"
       groupUserName = message.FromUserName
-      groupNickName = @groupInfo[groupUserName]
-      fromUserNickName = @groupMemberInfo[groupUserName][fromUserName]
+      groupNickName = @getGroupNickName groupUserName
+      fromUserNickName = @getGroupMemberNickName groupUserName, fromUserName
       log.debug "[_handleMessage] groupUserName: #{groupNickName} (#{groupUserName})"
       log.debug "[_handleMessage] fromUser: #{@_getAtName groupUserName, fromUserName}, #{fromUserNickName}"
       log.debug "[_handleMessage] content: #{content}"
@@ -219,7 +232,9 @@ class WxBot
         @notifyHubotMsg groupUserName, fromUserName, content, null
     else
       fromUserName = message.FromUserName
-      fromUserNickName = @contactInfo[fromUserName]
+      fromUserNickName = @getContactNickName fromUserName
+      if not fromUserNickName and fromUserName is @myUserName
+        fromUserNickName = "我"
       content = message.Content
       log.debug "[_handleMessage] fromUserName: #{fromUserNickName} (#{fromUserName})"
       log.debug "[_handleMessage] content: #{content}"
@@ -246,7 +261,8 @@ class WxBot
             @_handleMessage message for message in jsonBody.AddMsgList
           if jsonBody.ModContactCount != 0
             log.debug "new mod contact count: #{jsonBody.ModContactList.length}"
-            log.debug "new mod contact: %j", jsonBody.ModContactList
+            for contact in jsonBody.ModContactList
+              log.debug "#{contact.NickName}"
             @_handleModContactList contact for contact in jsonBody.ModContactList
         else
           @_logResponseError(resp)

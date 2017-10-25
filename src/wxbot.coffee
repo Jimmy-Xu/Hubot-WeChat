@@ -72,12 +72,9 @@ class WxBot
     if not @groupInfo[member.UserName]
       @groupInfo[member.UserName] = member.NickName
 
-  addToContactInfo: (member) ->
-    if not @contactInfo[member.UserName]
-      if member.DisplayName
-        @contactInfo[member.UserName] = member.DisplayName
-      else
-        @contactInfo[member.UserName] = member.NickName
+  addToContactInfo: (contact) ->
+    if not @contactInfo[contact.UserName]
+        @contactInfo[contact.UserName] = contact
 
   addToGroupMemberInfo: (group) ->
     memberList = []
@@ -90,17 +87,33 @@ class WxBot
       @_addMaintainerUserName member.UserName, member.NickName
     @groupMemberInfo[group.UserName] = memberList
 
-  getContactNickName: (userName) ->
-    return @contactInfo[userName]
+  getContactName: (userName) ->
+    if userName is @myUserName
+      "我"
+    else if @contactInfo[userName]
+      if @contactInfo[userName].RemarkName
+        @contactInfo[userName].RemarkName
+      else
+        @contactInfo[userName].NickName
+    else
+      ""
 
-  getGroupNickName: (groupName) ->
-    return @groupInfo[groupName]
+  getContactByName: (remarkName, nickName) ->
+    result = []
+    for userName, contact of @contactInfo
+      if contact.RemarkName is remarkName and contact.NickName is nickName
+        result.push contact
+    result
 
-  getGroupMemberNickName: (groupName, groupMemberName) ->
-    return @groupMemberInfo[groupName][groupMemberName]
+  getGroupName: (groupName) ->
+    @groupInfo[groupName]
+
+  getGroupMemberName: (groupName, groupMemberName) ->
+    @groupMemberInfo[groupName][groupMemberName]
+
 
   isSelf: (userName) ->
-    return userName is @myUserName
+    userName is @myUserName
 
   sendMessage: (fromUser, toGroup, toUser, messageContent, callback) ->
     try
@@ -223,8 +236,8 @@ class WxBot
       else
         fromUserName = "anonymous"
       groupUserName = message.FromUserName
-      groupNickName = @getGroupNickName groupUserName
-      fromUserNickName = @getGroupMemberNickName groupUserName, fromUserName
+      groupNickName = @getGroupName groupUserName
+      fromUserNickName = @getGroupMemberName groupUserName, fromUserName
       log.debug "[_handleMessage] groupUserName: #{groupNickName} (#{groupUserName})"
       log.debug "[_handleMessage] fromUser: #{@_getAtName groupUserName, fromUserName}, #{fromUserNickName}"
       log.debug "[_handleMessage] content: #{content}"
@@ -232,7 +245,7 @@ class WxBot
         @notifyHubotMsg groupUserName, fromUserName, content, null
     else
       fromUserName = message.FromUserName
-      fromUserNickName = @getContactNickName fromUserName
+      fromUserNickName = @getContactName fromUserName
       if not fromUserNickName and fromUserName is @myUserName
         fromUserNickName = "我"
       content = message.Content

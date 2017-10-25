@@ -15,6 +15,7 @@ err = require '../src/wxError'
 
 class WxBot
   constructor: ->
+    @contactInfo = {}
     @groupInfo = {}
     @groupMemberInfo = {}
     @syncKey = {}
@@ -32,6 +33,7 @@ class WxBot
       if jsonBody.BaseResponse.Ret == WxResCodes.OK && jsonBody.Count > 0
         @syncKey = jsonBody.SyncKey
         @myUserName = jsonBody.User.UserName
+        @addToContactInfo member for member in jsonBody.ContactList when not(@_isGroup member)
         @addToGroupInfo member for member in jsonBody.ContactList when @_isGroup member
         return
     @_logResponseError(response)
@@ -50,6 +52,7 @@ class WxBot
     if response.statusCode == HttpCodes.OK
       jsonBody = @_getJsonBody response
       if jsonBody.BaseResponse.Ret == WxResCodes.OK && jsonBody.MemberCount > 0
+        @addToContactInfo member for member in jsonBody.MemberList when not (@_isGroup member)
         @addToGroupInfo member for member in jsonBody.MemberList when @_isGroup member
         return
     @_logResponseError response
@@ -68,6 +71,13 @@ class WxBot
   addToGroupInfo: (member) ->
     if not @groupInfo[member.UserName]
       @groupInfo[member.UserName] = member.NickName
+
+  addToContactInfo: (member) ->
+    if not @contactInfo[member.UserName]
+      if member.DisplayName
+        @contactInfo[member.UserName] = member.DisplayName
+      else
+        @contactInfo[member.UserName] = member.NickName
 
   addToGroupMemberInfo: (group) ->
     memberList = []
@@ -200,16 +210,18 @@ class WxBot
       else
         fromUserName = "anonymous"
       groupUserName = message.FromUserName
-      log.debug "[_handleMessage] groupUserName: #{@groupInfo[groupUserName]}, #{groupUserName}"
-      log.debug "[_handleMessage] fromUser: #{@_getAtName groupUserName, fromUserName}, #{fromUserName}"
-      log.debug "[_handleMessage] content: #{content}"
       groupNickName = @groupInfo[groupUserName]
+      fromUserNickName = @groupMemberInfo[groupUserName][fromUserName]
+      log.debug "[_handleMessage] groupUserName: #{groupNickName} (#{groupUserName})"
+      log.debug "[_handleMessage] fromUser: #{@_getAtName groupUserName, fromUserName}, #{fromUserNickName}"
+      log.debug "[_handleMessage] content: #{content}"
       if config.listenOnAllGroups or groupNickName in config.listenGroupNameList
         @notifyHubotMsg groupUserName, fromUserName, content, null
     else
       fromUserName = message.FromUserName
+      fromUserNickName = @contactInfo[fromUserName]
       content = message.Content
-      log.debug "[_handleMessage] fromUserName: #{fromUserName}"
+      log.debug "[_handleMessage] fromUserName: #{fromUserNickName} (#{fromUserName})"
       log.debug "[_handleMessage] content: #{content}"
       @notifyHubotMsg null, fromUserName, content, null
 
@@ -220,6 +232,8 @@ class WxBot
 
       if contact.MemberCount isnt 0
         @addToGroupMemberInfo contact
+    else
+      @addToContactInfo contact
 
   _handleWebSyncCb: (resp, resBody, opts) =>
     try

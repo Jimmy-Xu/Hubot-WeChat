@@ -60,6 +60,7 @@ class WxBotAdapter extends Adapter
     @wxbot.registerHubotReceiveFn @hubotReceiveMsgFn
     @emit 'connected'
     @robot.logger.info "wx robot init done"
+    log.debug "@contactInfo", @wxbot.contactInfo
     log.debug "@groupInfo", @wxbot.groupInfo
     log.debug "@groupMemberInfo", @wxbot.groupMemberInfo
     @webWxSyncTimer.setInterval @wxbot.webWxSync, '', config.webWxSyncInterval

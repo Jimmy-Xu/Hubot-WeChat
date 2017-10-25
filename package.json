@@ -1,7 +1,7 @@
 {
-  "name": "hubot-weixin",
-  "version": "1.0.8",
-  "description": "This is wechat/weixin adapter for hubot",
+  "name": "hubot-another-weixin",
+  "version": "0.1.0",
+  "description": "This is another wechat/weixin adapter for hubot",
   "main": "./src/hubot-wx.coffee",
   "keywords": [
     "hubot",
@@ -10,8 +10,8 @@
     "weixin"
   ],
   "author": {
-    "name": "Kasper Deng",
-    "email": "kasperdeng@gmail.com"
+    "name": "Jimmy Xu",
+    "email": "xjimmyshcn@gmail.com"
   },
   "license": "MIT",
   "dependencies": {

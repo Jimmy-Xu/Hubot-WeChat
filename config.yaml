@@ -54,8 +54,8 @@ foreverDaemon: true
   # u = microseconds
   # n = nanoseconds
 webWxSyncInterval: "2s"
-syncCheckInterval: "30s"
+syncCheckInterval: "10s"
 reportHealthInterval: "21600s"
 
 logToFile: false
-wxLogPath: "./node_modules/hubot-weixin/wxhubot.log"
+wxLogPath: "./wxhubot.log"

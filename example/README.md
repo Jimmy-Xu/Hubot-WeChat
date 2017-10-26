@@ -28,6 +28,17 @@ for example, from chrome
 
 ![](webwxinit.png)
 
+## update config.yaml
+
+```
+$ cp node_modules/hubot-another-weixin/config.yaml config.yaml
+update the following parameter:
+- cookie
+- Uin
+- Sid
+- Skey
+- DeviceID
+```
 
 ## start hubot with another-weixin adapter
 ```bash
@@ -38,5 +49,6 @@ export HUBOT_EXT_CMD_BIN="/home/xjimmy/gopath/src/github.com/jimmy-xu/talk915/ma
 export HUBOT_EXT_CMD_ARG="--username xxxxxxxxx --password=xxxxxxxxxxx --period=0 --quiet"
 export HUBOT_GNTP_SERVER="192.168.1.23"
 export HUBOT_GNTP_PASSWORD="xxxxxxxx"
-./bin/hubot -n "mybot" -a another-weixin
+
+$ ./bin/hubot -n "mybot" -a another-weixin
 ```

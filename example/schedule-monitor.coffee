@@ -107,14 +107,14 @@ module.exports = (robot) ->
           robot.adapter.wxbot.api.sendMessage robot.adapter.wxbot.myUserName, targetUserName, msgContent, (rlt) ->
             robot.logger.info "send to filehelper: #{rlt.statusMessage}(#{rlt.statusCode})"
         else
-          robot.adapter.info "[WARN] skip to send message to wechat"
+          robot.logger.info "[WARN] skip to send message to wechat"
         if gntpOpts.server
           # notify via gntp-send
-          robot.adapter.info "title: #{msgTitle} message: #{msgContent} gntpOpts: #{gntpOpts}"
+          robot.logger.info "title: #{msgTitle} message: #{msgContent} gntpOpts: #{gntpOpts}"
           nodeGrowl msgTitle, msgContent, gntpOpts, (text) ->
-            robot.adapter.info "gntp result: #{text}"
+            robot.logger.info "gntp result: #{text}"
         else
-          robot.adapter.info "[WARN] skip to send message to growl"
+          robot.logger.info "[WARN] skip to send message to growl"
     ), (() ->
       robot.logger.info "result had been sent to filehelper, check again after #{interval} minutes"
       setTimer interval

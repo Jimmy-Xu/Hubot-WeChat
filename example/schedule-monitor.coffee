@@ -38,7 +38,7 @@ module.exports = (robot) ->
     nickName: process.env.HUBOT_TARGET_NICKNAME
     remarkName: process.env.HUBOT_TARGET_REMARKNAME
   interval = if process.env.HUBOT_CHECK_INTERVAL then process.env.HUBOT_CHECK_INTERVAL else 15
-  targetUserName = null
+  targetUser = null
   scheduleResult =
     NotChanged: "课程无变化"
     Error: "程序错误"
@@ -63,11 +63,13 @@ module.exports = (robot) ->
       false
 
     # find target user
-    targetUser = robot.adapter.wxbot.getContactByName(targetOpts.remarkName, targetOpts.nickName)
-    if targetUser.length isnt 1
-      robot.logger.info "[WARN] target user isn't unique: #{targetUser.length}), ignore"
-      false
-    robot.logger.info "found target user: #{targetUser[0].UserName}, #{targetUser[0].NickName}"
+    if not targetUser
+      targetUsers = robot.adapter.wxbot.getContactByName(targetOpts.remarkName, targetOpts.nickName)
+      if targetUsers.length isnt 1
+        robot.logger.info "[WARN] target user must be unique: #{targetUsers.length}), ignore"
+        false
+      targetUser = targetUsers[0]
+      robot.logger.info "found target user: #{targetUser.UserName}, #{targetUser.NickName}"
 
     # check sender
     sendNickName = robot.adapter.wxbot.getContactName sender
@@ -75,7 +77,7 @@ module.exports = (robot) ->
       robot.logger.info "[WARN] sender(#{sender}) not found, ignore"
       false
     robot.logger.info "found send user: #{sendNickName} - (#{sender})"
-    if sender not in [ targetUser[0].UserName, robot.adapter.wxbot.myUserName ]
+    if sender not in [ targetUser.UserName, robot.adapter.wxbot.myUserName ]
       robot.logger.info "[WARN] sender isn't valid, ignore"
       false
     true
@@ -84,16 +86,16 @@ module.exports = (robot) ->
   setTimer = (_interval) ->
     if _interval is 0
       # find target user
-      targetUser = robot.adapter.wxbot.getContactByName(targetOpts.remarkName, targetOpts.nickName)
-      if targetUser.length isnt 1
-        robot.logger.info "[WARN] target user isn't unique: #{targetUser.length}), ignore"
+      targetUsers = robot.adapter.wxbot.getContactByName(targetOpts.remarkName, targetOpts.nickName)
+      if targetUsers.length isnt 1
+        robot.logger.info "[WARN] target user must unique: #{targetUsers.length}), ignore"
         false
-      robot.logger.info "found target user: #{targetUser[0].UserName}, #{targetUser[0].NickName}"
-      targetUserName = targetUser[0].UserName
+      targetUser = targetUsers[0]
+      robot.logger.info "found target user: #{targetUser.UserName}, #{targetUser.NickName}"
 
       msgContent="#{robot.name}: 开始监控课表"
-      robot.adapter.wxbot.api.sendMessage robot.adapter.wxbot.myUserName, targetUserName, msgContent, (rlt) ->
-        robot.logger.info "send to filehelper: #{rlt.statusMessage}(#{rlt.statusCode})"
+      robot.adapter.wxbot.api.sendMessage robot.adapter.wxbot.myUserName, targetUser.UserName, msgContent, (rlt) ->
+        robot.logger.info "start message had been sent to #{targetUser.NickName}: #{rlt.statusMessage}(#{rlt.statusCode})"
 
     setTimeout doFetch, _interval * 60 * 1000, ((e, result) ->
       if e
@@ -103,9 +105,9 @@ module.exports = (robot) ->
         msgContent = "#{robot.name}: #{result}"
         robot.logger.info "msgTitle: #{msgTitle} msgContent: #{msgContent}"
         # notify via wechat
-        if targetUserName
-          robot.adapter.wxbot.api.sendMessage robot.adapter.wxbot.myUserName, targetUserName, msgContent, (rlt) ->
-            robot.logger.info "send to filehelper: #{rlt.statusMessage}(#{rlt.statusCode})"
+        if targetUser.UserName
+          robot.adapter.wxbot.api.sendMessage robot.adapter.wxbot.myUserName, targetUser.UserName, msgContent, (rlt) ->
+            robot.logger.info "result had been sent to #{targetUser.NickName}: #{rlt.statusMessage}(#{rlt.statusCode})"
         else
           robot.logger.info "[WARN] skip to send message to wechat"
         if gntpOpts.server
@@ -116,7 +118,7 @@ module.exports = (robot) ->
         else
           robot.logger.info "[WARN] skip to send message to growl"
     ), (() ->
-      robot.logger.info "result had been sent to filehelper, check again after #{interval} minutes"
+      robot.logger.info "result had been sent, check again after #{interval} minutes"
       setTimer interval
     )
 

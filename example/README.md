@@ -56,7 +56,7 @@ $ npm install node-growl
 $ ./bin/hubot -n "talk915bot" -a another-weixin
 ```
 
-# example - weiin-notify-growl
+# example - weixin-notify-growl
 
 ```bash
 export HUBOT_GNTP_SERVER="192.168.1.23"

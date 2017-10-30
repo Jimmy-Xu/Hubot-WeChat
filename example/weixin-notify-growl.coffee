@@ -67,7 +67,7 @@ module.exports = (robot) ->
       msgTitle = "From 微信[#{sendNickName}]"
     else if resp.message.user.room.substr(0, 2) is "@@"
       _groupName = resp.message.user.room
-      groupNickName = robot.adapter.wxbox.getGroupName _groupName
+      groupNickName = robot.adapter.wxbot.getGroupName _groupName
       msgTitle = "From 微信[\##{groupNickName.NickName} #{sendNickName}]"
     else
       _toUserName = resp.message.user.room

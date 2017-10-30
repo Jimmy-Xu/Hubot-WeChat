@@ -84,11 +84,36 @@ module.exports = (robot) ->
       msgJson = handleMessage resp.message.text
       if msgJson isnt null
         console.log "\nmsgJson:", msgJson
-        if msgJson.msg.appmsg.length >= 1
-          msgContent = "title:#{msgJson.msg.appmsg[0].title}\ndes:#{msgJson.msg.appmsg[0].des}"
+        if msgJson.msg.appmsg and msgJson.msg.appmsg.length >= 1
+          msgContent = "[链接] 标题:#{msgJson.msg.appmsg[0].title}\n摘要:#{msgJson.msg.appmsg[0].des}"
           url = "#{msgJson.msg.appmsg[0].url}"
+        else if msgJson.msg.img and msgJson.msg.img.length >= 1
+          img = msgJson.msg.img[0]['$']
+          size = Math.round parseInt(img.length) / 1024
+          msgContent = "[图片] 宽:#{img.cdnthumbwidth}像素 高:#{img.cdnthumbheight}像素 大小:#{size}KB"
+        else if msgJson.msg.voicemsg and msgJson.msg.voicemsg.length >= 1
+          voice = msgJson.msg.voicemsg[0]['$']
+          voicelength = Math.round parseInt(voice.voicelength) / 1000
+          size = Math.round parseInt(voice.length) / 1024
+          msgContent = "[语音] length:#{voicelength} 秒 大小:#{size}KB"
+        else if msgJson.msg.videomsg and msgJson.msg.videomsg.length >= 1
+          video = msgJson.msg.videomsg[0]['$']
+          size = Math.round parseInt(video.length) / 1024
+          msgContent = "[视频] length:#{video.playlength} 秒 大小:#{size}KB"
         else
-          robot.logger.info "msgJson.msg.appmsg is empty:", msgJson.msg
+          other = Object.keys msgJson.msg
+          msgContent = "[未解析]#{other}\n#{JSON.stringify(msgJson, null, 2)}"
+          robot.logger.info "key of msgJson.msg:", other
+    else if resp.message.text.match(/&lt;msg .*\/&gt;/) isnt null
+      robot.logger.info "[xml message:名片] start to parse..."
+      msgJson = handleMessage resp.message.text
+      card = msgJson.msg['$']
+      gender = if card.sex is "1" then "男" else "女"
+      msgContent = "[名片] 用户名:#{card.username} 昵称:#{card.nickname} 城市:#{card.city} 省:#{card.province} 性别:#{gender}"
+    else if resp.message.text.match(/webwxgetpubliclinkimg.*pictype=location/) isnt null
+      robot.logger.info "共享位置:", resp.message.text
+      position = resp.message.text.split(':<br/>')[0]
+      msgContent = "[共享位置]#{position}"
     # notify message
     if gntpOpts.server
       robot.logger.info "title: #{msgTitle} message: #{msgContent}"

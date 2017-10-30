@@ -10,9 +10,10 @@ The gntp server is specified by HUBOT_GNTP_SERVER and HUBOT_GNTP_PASSWORD.
 
 ```bash
 $ npm install -g coffee-script
-$ npm install -g yo generator-hubot
-$ mkdir ~/hubot
-$ cd ~/hubot
+$ npm install -g yo
+
+$ mkdir -p ~/hubot && cd ~/hubot
+$ npm install generator-hubot
 $ yo hubot
 
 $ npm install hubot-another-weixin
@@ -40,7 +41,8 @@ update the following parameter:
 - DeviceID
 ```
 
-## start hubot with another-weixin adapter
+# example - schedule-monitor
+
 ```bash
 export HUBOT_TARGET_NICKNAME="xxx"
 export HUBOT_TARGET_REMARKNAME="xxx"
@@ -50,5 +52,16 @@ export HUBOT_EXT_CMD_ARG="--username xxxxxxxxx --password=xxxxxxxxxxx --period=0
 export HUBOT_GNTP_SERVER="192.168.1.23"
 export HUBOT_GNTP_PASSWORD="xxxxxxxx"
 
-$ ./bin/hubot -n "mybot" -a another-weixin
+$ npm install node-growl
+$ ./bin/hubot -n "talk915bot" -a another-weixin
+```
+
+# example - weiin-notify-growl
+
+```bash
+export HUBOT_GNTP_SERVER="192.168.1.23"
+export HUBOT_GNTP_PASSWORD="xxxxxxxx"
+
+$ npm install node-growl
+$ PORT=8100 ./bin/hubot -n "wxbot" -a another-weixin
 ```

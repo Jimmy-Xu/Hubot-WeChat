@@ -11,8 +11,8 @@
 #------------------------------------------------------------------------------------------
 
 # Wx Urls #
-baseUrl: "https://wx2.qq.com/cgi-bin/mmwebwx-bin" #wx/wx2
-baseUploadUrl: "https://file2.wx.qq.com/cgi-bin/mmwebwx-bin" #file/file2
+baseUrl: "https://wx.qq.com/cgi-bin/mmwebwx-bin" #wx/wx2
+baseUploadUrl: "https://file.wx.qq.com/cgi-bin/mmwebwx-bin" #file/file2
 getContactUrl: "/webwxgetcontact"
 batchGetContactUrl: "/webwxbatchgetcontact"
 sendMsgUrl: "/webwxsendmsg"

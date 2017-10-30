@@ -33,7 +33,7 @@ class WxBot
       if jsonBody.BaseResponse.Ret == WxResCodes.OK && jsonBody.Count > 0
         @syncKey = jsonBody.SyncKey
         @myUserName = jsonBody.User.UserName
-        @addToContactInfo member for member in jsonBody.ContactList when not(@_isGroup member)
+        @addToContactInfo member for member in jsonBody.ContactList when not (@_isGroup member)
         @addToGroupInfo member for member in jsonBody.ContactList when @_isGroup member
         return
     @_logResponseError(response)
@@ -74,7 +74,7 @@ class WxBot
 
   addToContactInfo: (contact) ->
     if not @contactInfo[contact.UserName]
-        @contactInfo[contact.UserName] = contact
+      @contactInfo[contact.UserName] = contact
 
   addToGroupMemberInfo: (group) ->
     memberList = []
@@ -179,7 +179,7 @@ class WxBot
   syncCheck: (callback) =>
     log.debug "syncCheck running in #{config.syncCheckInterval}"
     try
-      @api.syncCheck @syncKey, @syncCheckCounter+1, @_handleSyncCheckCb
+      @api.syncCheck @syncKey, @syncCheckCounter + 1, @_handleSyncCheckCb
     catch error
       if error instanceof err.WxError
         throw error
@@ -245,13 +245,18 @@ class WxBot
         @notifyHubotMsg groupUserName, fromUserName, content, null
     else
       fromUserName = message.FromUserName
+      toUserName = message.ToUserName
       fromUserNickName = @getContactName fromUserName
+      toUserNickName = @getContactName toUserName
       if not fromUserNickName and fromUserName is @myUserName
         fromUserNickName = "我"
+      if not toUserNickName and toUserName is @myUserName
+        toUserNickName = "我"
       content = message.Content
       log.debug "[_handleMessage] fromUserName: #{fromUserNickName} (#{fromUserName})"
+      log.debug "[_handleMessage] toUserName: #{toUserNickName} (#{toUserName})"
       log.debug "[_handleMessage] content: #{content}"
-      @notifyHubotMsg null, fromUserName, content, null
+      @notifyHubotMsg toUserName, fromUserName, content, null
 
 
   _handleModContactList: (contact) ->

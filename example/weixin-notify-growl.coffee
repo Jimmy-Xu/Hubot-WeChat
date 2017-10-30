@@ -52,23 +52,33 @@ module.exports = (robot) ->
     console.log "xmlJson:\n", xmlJson
     return xmlJson
 
+
   robot.catchAll (resp) ->
     if not resp.message.text
       return
-    robot.logger.info "[WARN] not catched message:\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
+    robot.logger.info "[WARN] not catched message:\nroom:#{resp.message.room}\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
     valid = check robot.adapterName
     if not valid
       return
     robot.logger.info "[catchAll] receive message: #{resp.message}"
+    # parse user
     sendNickName = robot.adapter.wxbot.getContactName resp.message.user.name
     if not resp.message.user.room
       msgTitle = "From 微信[#{sendNickName}]"
-    else
-      groupNickName = robot.adapter.wxbox.getGroupName resp.message.user.room.name
+    else if resp.message.user.room.substr(0, 2) is "@@"
+      _groupName = resp.message.user.room
+      groupNickName = robot.adapter.wxbox.getGroupName _groupName
       msgTitle = "From 微信[\##{groupNickName.NickName} #{sendNickName}]"
+    else
+      _toUserName = resp.message.user.room
+      toNickName = robot.adapter.wxbot.getContactName _toUserName
+      if not toNickName
+        msgTitle = "From 微信[From:#{sendNickName} To:#{_toUserName}]"
+      else
+        msgTitle = "From 微信[From:#{sendNickName} To:#{toNickName}]"
+    # parse message
     msgContent = resp.message.text
     url = ""
-    # parse xml
     if resp.message.text.match(/&lt;msg&gt;.*&lt;\/msg&gt;.*/) isnt null
       robot.logger.info "[xml message] start to parse..."
       msgJson = handleMessage resp.message.text
@@ -79,6 +89,7 @@ module.exports = (robot) ->
           url = "#{msgJson.msg.appmsg[0].url}"
         else
           robot.logger.info "msgJson.msg.appmsg is empty:", msgJson.msg
+    # notify message
     if gntpOpts.server
       robot.logger.info "title: #{msgTitle} message: #{msgContent}"
       _gntpOpts =

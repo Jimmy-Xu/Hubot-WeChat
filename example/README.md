@@ -63,6 +63,9 @@ $ ./bin/hubot -n "talk915bot" -a another-weixin
 ```bash
 export HUBOT_GNTP_SERVER="192.168.1.23"
 export HUBOT_GNTP_PASSWORD="xxxxxxxx"
+export HUBOT_WATCH_GROUPS="HyperHQ,我爱我家"
+export HUBOT_WATCH_USERS=""
+export HUBOT_WATCH_GH="中国移动139邮箱"
 
 $ npm install node-growl
 $ PORT=8100 ./bin/hubot -n "wxbot" -a another-weixin

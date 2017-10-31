@@ -7,6 +7,9 @@
 # Configuration:
 #   HUBOT_GNTP_SERVER
 #   HUBOT_GNTP_PASSWORD
+#   HUBOT_WATCH_GROUPS          #群
+#   HUBOT_WATCH_USERS           #用户
+#   HUBOT_WATCH_GH              #公众号
 #
 # Commands:
 #
@@ -27,6 +30,10 @@ module.exports = (robot) ->
     server: process.env.HUBOT_GNTP_SERVER
     password: process.env.HUBOT_GNTP_PASSWORD
     appname: "weixin-notify-growl"
+  watchOpts =
+    group: if process.env.HUBOT_WATCH_GROUPS then process.env.HUBOT_WATCH_GROUPS.split "," else []
+    user: if process.env.HUBOT_WATCH_USERS then process.env.HUBOT_WATCH_USERS.split "," else []
+    gh: if process.env.HUBOT_WATCH_GH then process.env.HUBOT_WATCH_GH.split "," else []
 
   #==============================
   # function
@@ -34,56 +41,109 @@ module.exports = (robot) ->
   check = (adapterName) ->
     if adapterName isnt "another-weixin"
       # check adapter
-      robot.logger.info "[WARN] adapter should be another-weixin, but current is #{adapterName}, ignore"
+      robot.logger.error "[WARN] adapter should be another-weixin, but current is #{adapterName}, ignore"
       false
     true
 
+  checkWatchGroup = (groupNickName) ->
+    matched = false
+    if groupNickName
+      robot.logger.debug "[checkWatchGroup] groupNickName:", groupNickName
+      for item, i in watchOpts.group
+        if groupNickName is item
+          matched = true
+          break
+    else
+      robot.logger.error "[checkWatchGroup] groupNickName is invalid:", groupNickName
+    matched
+
+  checkWatchUser = (userInfo, isGH) ->
+    matched = false
+    filter = null
+    if userInfo
+      robot.logger.debug "[checkWatchUser] isGH:#{isGH} - KeyWord:#{userInfo['KeyWord']} RemarkName:#{userInfo.RemarkName} DisplayName:#{userInfo.DisplayName} NickName:#{userInfo.NickName}"
+      if isGH
+        filter = watchOpts.gh
+      else
+        filter = watchOpts.user
+      for item, i in filter
+        if userInfo.RemarkName and userInfo.RemarkName is item
+          matched = true
+          break
+        else if userInfo.DisplayName and userInfo.DisplayName is item
+          matched = true
+          break
+        else if userInfo.NickName and userInfo.NickName is item
+          matched = true
+          break
+    else
+      robot.logger.error "[checkWatchUser] isGH:#{isGH} - userInfo is invalid:", userInfo
+    matched
+
   handleMessage = (text) ->
     xmlText = text.split("&lt;").join("<").split("&gt;").join(">").split("<br/>").join("\n")
-    console.debug "xmlText:\n", xmlText
+    robot.logger.debug "xmlText:\n", xmlText
     xmlJson = {}
     xml2js.parseString xmlText, (err, result) ->
       if not err
-        console.debug "handleMessage OK:", JSON.stringify(result, null, 2)
+        robot.logger.debug "handleMessage OK:", JSON.stringify(result, null, 2)
         xmlJson = result
       else
-        robot.logger.info "handleMessage error:", err, " \nxmlText:\n", xmlText
-    console.debug "xmlJson:\n", xmlJson
+        robot.logger.error "handleMessage error:", err, " \nxmlText:\n", xmlText
+    robot.logger.debug "xmlJson:\n", xmlJson
     return xmlJson
 
 
   robot.catchAll (resp) ->
     if not resp.message.text
       return
-    console.debug "[WARN] not catched message:\nroom:#{resp.message.room}\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
+    robot.logger.debug "[WARN] not catched message:\nroom:#{resp.message.room}\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
     valid = check robot.adapterName
     if not valid
       return
-    console.debug "[catchAll] receive message: #{resp.message}"
+    robot.logger.debug "[catchAll] receive message: #{resp.message}"
+    groupNickName = ""
+    fromUserName = resp.message.user.name
+    fromUserInfo = null
+    toUserInfo = null
     if not resp.message.user.room
-      _fromUserName = resp.message.user.name
-      fromNickName = robot.adapter.wxbot.getContactName _fromUserName
-      console.log "[room is empty] user: resp.message.user", resp.message.user
-      msgTitle = "From 微信[#{fromNickName}]"
+      robot.logger.info "[room is empty] user: resp.message.user", resp.message.user
+      fromNickName = robot.adapter.wxbot.getContactName fromUserName
+      fromUserInfo = robot.adapter.wxbot.getContactByID fromUserName
+      if fromUserInfo['KeyWord'] is "gh_"
+        from = "[公众号]"
+      else
+        from = "From:"
+      msgTitle = "From 微信[#{from}#{fromNickName}]"
     else if resp.message.user.room.substr(0, 2) is "@@"
+      # group message
       _groupName = resp.message.user.room
-      groupName = robot.adapter.wxbot.getGroupName _groupName
-      _fromUserName = resp.message.user.name
-      fromNickName = robot.adapter.wxbot.getGroupMemberName _groupName, _fromUserName
-      isFriend = robot.adapter.wxbot.getContactName _fromUserName
+      groupNickName = robot.adapter.wxbot.getGroupName _groupName
+      fromNickName = robot.adapter.wxbot.getGroupMemberName _groupName, fromUserName
+      isFriend = robot.adapter.wxbot.getContactName fromUserName
       if isFriend
-        msgTitle = "From 微信[\##{groupName} #{fromNickName}]"
+        msgTitle = "From 微信[\##{groupNickName} #{fromNickName}]"
       else
-        msgTitle = "From 微信[\##{groupName} (陌生人)#{fromNickName}]"
+        msgTitle = "From 微信[\##{groupNickName} (陌生人)#{fromNickName}]"
     else
-      _fromUserName = resp.message.user.name
+      # direct message
       _toUserName = resp.message.user.room
-      fromNickName = robot.adapter.wxbot.getContactName _fromUserName
       toNickName = robot.adapter.wxbot.getContactName _toUserName
-      if not toNickName
-        msgTitle = "From 微信[From:#{fromNickName} To:#{_toUserName}]"
+      toUserInfo = robot.adapter.wxbot.getContactByID _toUserName
+      fromNickName = robot.adapter.wxbot.getContactName fromUserName
+      fromUserInfo = robot.adapter.wxbot.getContactByID fromUserName
+      if fromUserInfo and fromUserInfo['KeyWord'] is "gh_"
+        from = "公众号:"
       else
-        msgTitle = "From 微信[From:#{fromNickName} To:#{toNickName}]"
+        from = "From:"
+      if toUserInfo and toUserInfo['KeyWord'] is "gh_"
+        to = "公众号:"
+      else
+        to = "To:"
+      if not toNickName
+        msgTitle = "From 微信[#{from}#{fromNickName} #{to}#{_toUserName}]"
+      else
+        msgTitle = "From 微信[#{from}#{fromNickName} #{to}#{toNickName}]"
     # parse message
     msgContent = resp.message.text
     url = ""
@@ -91,7 +151,7 @@ module.exports = (robot) ->
       robot.logger.info "[xml message] start to parse..."
       msgJson = handleMessage resp.message.text
       if msgJson isnt null
-        console.debug "\nmsgJson:", msgJson
+        robot.logger.debug "\nmsgJson:", msgJson
         if msgJson.msg.appmsg and msgJson.msg.appmsg.length >= 1
           msgContent = "[链接] 标题:#{msgJson.msg.appmsg[0].title}\n摘要:#{msgJson.msg.appmsg[0].des}"
           url = "#{msgJson.msg.appmsg[0].url}"
@@ -124,14 +184,38 @@ module.exports = (robot) ->
       msgContent = "[共享位置]#{position}"
     # notify message
     if gntpOpts.server
-      robot.logger.info "title: #{msgTitle} message: #{msgContent}"
-      _gntpOpts =
-        server: gntpOpts.server
-        password: gntpOpts.password
-        appname: gntpOpts.appname
-        url: url
-      nodeGrowl msgTitle, msgContent, _gntpOpts, (text) ->
-        if text isnt null
-          robot.logger.info ">gntp-send failed(#{text})"
-        else
-          robot.logger.info ">gntp-send OK"
+      matched = false
+      # filter message
+      robot.logger.debug "watchOpts:", watchOpts, " groupNickName:", groupNickName, " fromUserInfo:", fromUserInfo, "toUserInfo:", toUserInfo
+      if watchOpts.group.length > 0 and groupNickName
+        robot.logger.info "filter 群名"
+        matched = checkWatchGroup groupNickName
+      else if watchOpts.user.length > 0 and fromUserInfo and fromUserInfo['KeyWord'] isnt "gh_"
+        robot.logger.info "filter from:用户名"
+        matched = checkWatchUser fromUserInfo, false
+      else if watchOpts.user.length > 0 and toUserInfo and toUserInfo['KeyWord'] isnt "gh_"
+        robot.logger.info "filter to:用户名"
+        matched = checkWatchUser toUserInfo, false
+      else if watchOpts.gh.length > 0 and fromUserInfo and fromUserInfo['KeyWord'] is "gh_"
+        robot.logger.info "filter from:公众号"
+        matched = checkWatchUser fromUserInfo, true
+      else if watchOpts.gh.length > 0 and toUserInfo and toUserInfo['KeyWord'] is "gh_"
+        robot.logger.info "filter to:公众号"
+        matched = checkWatchUser toUserInfo, true
+      else
+        matched = true
+      if matched
+        robot.logger.info "Title: #{msgTitle} Content: #{msgContent}"
+        _gntpOpts =
+          server: gntpOpts.server
+          password: gntpOpts.password
+          appname: gntpOpts.appname
+          url: url
+        nodeGrowl msgTitle, msgContent, _gntpOpts, (text) ->
+          if text isnt null
+            robot.logger.warning ">gntp-send failed(#{text})"
+          else
+            robot.logger.info ">gntp-send OK"
+      else
+        robot.logger.info "Title: #{msgTitle} Content: #{msgContent}"
+        robot.logger.warning "not matched message, skip send to growl"

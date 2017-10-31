@@ -40,42 +40,50 @@ module.exports = (robot) ->
 
   handleMessage = (text) ->
     xmlText = text.split("&lt;").join("<").split("&gt;").join(">").split("<br/>").join("\n")
-    console.log "xmlText:\n", xmlText
+    console.debug "xmlText:\n", xmlText
     xmlJson = {}
     xml2js.parseString xmlText, (err, result) ->
       if not err
-        robot.logger.info "handleMessage OK:", JSON.stringify(result, null, 2)
+        console.debug "handleMessage OK:", JSON.stringify(result, null, 2)
         xmlJson = result
       else
-        robot.logger.info "handleMessage error:", err
-        null
-    console.log "xmlJson:\n", xmlJson
+        robot.logger.info "handleMessage error:", err, " \nxmlText:\n", xmlText
+    console.debug "xmlJson:\n", xmlJson
     return xmlJson
 
 
   robot.catchAll (resp) ->
     if not resp.message.text
       return
-    robot.logger.info "[WARN] not catched message:\nroom:#{resp.message.room}\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
+    console.debug "[WARN] not catched message:\nroom:#{resp.message.room}\nsender:#{resp.message.user.name}\nmessage:#{resp.message.text}"
     valid = check robot.adapterName
     if not valid
       return
-    robot.logger.info "[catchAll] receive message: #{resp.message}"
-    # parse user
-    sendNickName = robot.adapter.wxbot.getContactName resp.message.user.name
+    console.debug "[catchAll] receive message: #{resp.message}"
     if not resp.message.user.room
-      msgTitle = "From 微信[#{sendNickName}]"
+      _fromUserName = resp.message.user.name
+      fromNickName = robot.adapter.wxbot.getContactName _fromUserName
+      console.log "[room is empty] user: resp.message.user", resp.message.user
+      msgTitle = "From 微信[#{fromNickName}]"
     else if resp.message.user.room.substr(0, 2) is "@@"
       _groupName = resp.message.user.room
-      groupNickName = robot.adapter.wxbot.getGroupName _groupName
-      msgTitle = "From 微信[\##{groupNickName.NickName} #{sendNickName}]"
+      groupName = robot.adapter.wxbot.getGroupName _groupName
+      _fromUserName = resp.message.user.name
+      fromNickName = robot.adapter.wxbot.getGroupMemberName _groupName, _fromUserName
+      isFriend = robot.adapter.wxbot.getContactName _fromUserName
+      if isFriend
+        msgTitle = "From 微信[\##{groupName} #{fromNickName}]"
+      else
+        msgTitle = "From 微信[\##{groupName} (陌生人)#{fromNickName}]"
     else
+      _fromUserName = resp.message.user.name
       _toUserName = resp.message.user.room
+      fromNickName = robot.adapter.wxbot.getContactName _fromUserName
       toNickName = robot.adapter.wxbot.getContactName _toUserName
       if not toNickName
-        msgTitle = "From 微信[From:#{sendNickName} To:#{_toUserName}]"
+        msgTitle = "From 微信[From:#{fromNickName} To:#{_toUserName}]"
       else
-        msgTitle = "From 微信[From:#{sendNickName} To:#{toNickName}]"
+        msgTitle = "From 微信[From:#{fromNickName} To:#{toNickName}]"
     # parse message
     msgContent = resp.message.text
     url = ""
@@ -83,7 +91,7 @@ module.exports = (robot) ->
       robot.logger.info "[xml message] start to parse..."
       msgJson = handleMessage resp.message.text
       if msgJson isnt null
-        console.log "\nmsgJson:", msgJson
+        console.debug "\nmsgJson:", msgJson
         if msgJson.msg.appmsg and msgJson.msg.appmsg.length >= 1
           msgContent = "[链接] 标题:#{msgJson.msg.appmsg[0].title}\n摘要:#{msgJson.msg.appmsg[0].des}"
           url = "#{msgJson.msg.appmsg[0].url}"

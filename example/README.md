@@ -58,6 +58,8 @@ $ ./bin/hubot -n "talk915bot" -a another-weixin
 
 # example - weixin-notify-growl
 
+**comment**: If the message had been read on wechat app of PC or Phone, then hubot will not receive the notification.
+
 ```bash
 export HUBOT_GNTP_SERVER="192.168.1.23"
 export HUBOT_GNTP_PASSWORD="xxxxxxxx"

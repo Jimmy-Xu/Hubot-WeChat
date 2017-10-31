@@ -79,11 +79,12 @@ class WxBot
   addToGroupMemberInfo: (group) ->
     memberList = []
     for member in group.MemberList
-      if member.DisplayName
+      if member.RemarkName
+        memberList[member.UserName] = member.RemarkName
+      else if member.DisplayName
         memberList[member.UserName] = member.DisplayName
       else
         memberList[member.UserName] = member.NickName
-
       @_addMaintainerUserName member.UserName, member.NickName
     @groupMemberInfo[group.UserName] = memberList
 
@@ -93,6 +94,8 @@ class WxBot
     else if @contactInfo[userName]
       if @contactInfo[userName].RemarkName
         @contactInfo[userName].RemarkName
+      else if @contactInfo[userName].DisplayName
+        @contactInfo[userName].DisplayName
       else
         @contactInfo[userName].NickName
     else
@@ -104,6 +107,9 @@ class WxBot
       if contact.RemarkName is remarkName and contact.NickName is nickName
         result.push contact
     result
+
+  getContactByID: (userName) ->
+    @contactInfo[userName]
 
   getGroupName: (groupName) ->
     @groupInfo[groupName]
@@ -319,8 +325,11 @@ class WxBot
     name.startsWith "@@"
 
   _getJsonBody: (response) ->
-    body = response.getBody 'utf-8'
-    return JSON.parse body
+    if response
+      body = response.getBody 'utf-8'
+      return JSON.parse body
+    else
+      log.error "response is empty: #{response}"
 
   _logResponseError: (response) ->
     log.error "status: %s\n header: %j\n body: %j\n ",

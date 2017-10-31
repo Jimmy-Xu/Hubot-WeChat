@@ -131,4 +131,7 @@ module.exports = (robot) ->
         appname: gntpOpts.appname
         url: url
       nodeGrowl msgTitle, msgContent, _gntpOpts, (text) ->
-        robot.logger.info "gntp result: #{text}"
+        if text isnt null
+          robot.logger.info ">gntp-send failed(#{text})"
+        else
+          robot.logger.info ">gntp-send OK"
